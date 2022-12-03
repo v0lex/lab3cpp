@@ -24,6 +24,8 @@ public:
 	Vector(Point, Point);
 	float length() const;
 	Point coordinates() const;
+	Point getBegin() const;
+	Point getEnd() const;
 	void printVector() const;
 private:
 	Point begin = 0;
@@ -47,6 +49,7 @@ public:
 	GroupOfVectors(std::vector<Vector>);
 	std::vector<Vector> getVectors() const;
 	void printGroupOfVectors() const;
+	void add(Vector);
 private: 
 	std::vector<Vector> vectors;
 };
@@ -58,7 +61,7 @@ public:
 	LinearEnvelope() {};
 	LinearEnvelope(GroupOfPoints);
 	static void setFindLinearEnvelope(FindLinearEnvelope*);
-	GroupOfPoints findLinearEnvelopeFunc() const;
+	GroupOfVectors findLinearEnvelopeFunc() const;
 	void printLinearEnvelope() const;
 	GroupOfPoints getPoints() const;
 private:
@@ -68,12 +71,17 @@ private:
 
 class FindLinearEnvelope {
 public:
-	virtual GroupOfPoints findLinearEnvelope(GroupOfPoints) = 0;
+	virtual GroupOfVectors findLinearEnvelope(GroupOfPoints) = 0;
 };
 
 class Kirkpatrick : public FindLinearEnvelope {
 public: 
-	GroupOfPoints findLinearEnvelope(GroupOfPoints);
+	GroupOfVectors findLinearEnvelope(GroupOfPoints);
+};
+
+class Jarvis : public FindLinearEnvelope {
+public:
+	GroupOfVectors findLinearEnvelope(GroupOfPoints);
 };
 
 std::vector<GroupOfPoints> pocketSortGroupOfPoints(GroupOfPoints);
@@ -85,18 +93,21 @@ std::vector<Point> getLeftPartOfEnvelope(std::vector<Point>);
 std::vector<Point> getRightPartOfEnvelope(std::vector<Point>);
 float getScalar(Vector v1, Vector v2);
 float getAngle(Vector v1, Vector v2);
+float getPointValueForLine(Point, Point, Point);
+bool checkPoint(Vector, std::vector<Point>);
+GroupOfVectors groupOfPointToGroupOFVectors(GroupOfPoints);
 
-FindLinearEnvelope* LinearEnvelope::findLinearEnvelope = new Kirkpatrick();
+FindLinearEnvelope* LinearEnvelope::findLinearEnvelope = new Jarvis();
 
 int main() {
 	Point p1(1, 1), p2(3, 2), p3(4, 3), p4(2, 5), p5(4, 7), p6(10,7), p7(9,4), p8(11,3), p9(10,1);
 	GroupOfPoints gop(std::vector<Point>{p1, p2, p3, p4, p5, p6, p7, p8, p9});
 	LinearEnvelope le(gop);
-	GroupOfPoints res = le.findLinearEnvelopeFunc();
-	std::vector<Point> resPoints = res.getPoints();
+	GroupOfVectors res = le.findLinearEnvelopeFunc();
+	std::vector<Vector> resPoints = res.getVectors();
 	std::cout << "Res: " << std::endl;
-	for (Point p : resPoints) {
-		p.printPoint();
+	for (Vector v : resPoints) {
+		v.printVector();
 	}
 	//GroupOfPoints res = getLeftPartOfEnvelope(std::vector<Point>{p1, p2, p3, p4, p5});
 	//std::vector<Point> resPoints = res.getPoints();
@@ -153,6 +164,14 @@ void Vector::printVector() const {
 	end.printPoint();
 }
 
+Point Vector::getBegin() const {
+	return begin;
+}
+
+Point Vector::getEnd() const {
+	return end;
+}
+
 GroupOfPoints::GroupOfPoints(std::vector<Point> groupOfPoints) : points(groupOfPoints) {};
 
 std::vector<Point> GroupOfPoints::getPoints() const {
@@ -183,13 +202,17 @@ void GroupOfVectors::printGroupOfVectors() const {
 	}
 }
 
+void GroupOfVectors::add(Vector v) {
+	vectors.push_back(v);
+}
+
 LinearEnvelope::LinearEnvelope(GroupOfPoints groupOfPoints) : points(groupOfPoints) {};
 
 void LinearEnvelope::setFindLinearEnvelope(FindLinearEnvelope* pfindLinearEnvelope) {
 	findLinearEnvelope = pfindLinearEnvelope;
 }
 
-GroupOfPoints LinearEnvelope::findLinearEnvelopeFunc() const {
+GroupOfVectors LinearEnvelope::findLinearEnvelopeFunc() const {
 	return findLinearEnvelope->findLinearEnvelope(this->points);
 }
 
@@ -197,7 +220,7 @@ GroupOfPoints LinearEnvelope::getPoints() const {
 	return points;
 }
 
-GroupOfPoints Kirkpatrick::findLinearEnvelope(GroupOfPoints gop) {
+GroupOfVectors Kirkpatrick::findLinearEnvelope(GroupOfPoints gop) {
 	std::cout << "Kirkpatrick: " << std::endl;
 	std::cout << "Sorting: " << std::endl;
 	std::vector<GroupOfPoints> sortedPoints = pocketSortGroupOfPoints(gop);
@@ -263,7 +286,7 @@ GroupOfPoints Kirkpatrick::findLinearEnvelope(GroupOfPoints gop) {
 	for (Point p : newRightEnvelope) {
 		rgop.add(p);
 	}
-	return rgop;
+	return groupOfPointToGroupOFVectors(rgop);
 }
 
 std::vector<GroupOfPoints> pocketSortGroupOfPoints(GroupOfPoints gop) {
@@ -408,4 +431,58 @@ float getScalar(Vector v1, Vector v2) {
 float getAngle(Vector v1, Vector v2) {
 	return acos((getScalar(v1, v2)) / (v1.length() * v2.length()));
 }
+
+GroupOfVectors Jarvis::findLinearEnvelope(GroupOfPoints gop) {
+	GroupOfVectors allVectors, evelopeVectors;
+	std::vector<Point> startedPoints = gop.getPoints();
+	for (int i = 0; i < startedPoints.size(); ++i) {
+		for (int j = 0; j < startedPoints.size(); ++j) {
+			if (i != j) {
+				allVectors.add(Vector(startedPoints.at(i), startedPoints.at(j)));
+			}
+		}
+	}
+	for (Vector v : allVectors.getVectors()) {
+		if (checkPoint(v, startedPoints)) {
+			evelopeVectors.add(v);
+		}
+	}
+	return evelopeVectors;
+}
+
+float getPointValueForLine(Point p, Point line1, Point line2) {
+	return ((p.getX() - line1.getX()) / (line2.getX() - line1.getX())) - ((p.getY() - line1.getY()) / (line2.getY() - line1.getY()));
+}
+
+bool checkPoint(Vector v, std::vector<Point> vp) {
+	bool allMoreThenZero = true;
+	bool allLessThenZero = true;
+	for (int i = 0; i < vp.size(); ++i) {
+		if (getPointValueForLine(vp.at(i), v.getBegin(), v.getEnd()) > 0) {
+			allLessThenZero = false;
+		}
+		else if (getPointValueForLine(vp.at(i), v.getBegin(), v.getEnd()) < 0) {
+			allMoreThenZero = false;
+		}
+		if (!(allMoreThenZero || allLessThenZero)) {
+			return false;
+		}
+	}
+	return true;
+}
+
+GroupOfVectors groupOfPointToGroupOFVectors(GroupOfPoints gop) {
+	std::vector<Point> points = gop.getPoints();
+	GroupOfVectors vectors;
+	for (int i = 0; i < points.size(); ++i) {
+		if (i != points.size() - 1) {
+			vectors.add(Vector(points.at(i), points.at(i + 1)));
+		}
+		else {
+			vectors.add(Vector(points.at(i), points.at(0)));
+		}
+	}
+	return vectors;
+}
+
 
