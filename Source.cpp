@@ -5,6 +5,8 @@
 #include<algorithm>
 #include<math.h>
 #include<tuple>
+#include<SFML/Graphics.hpp>
+#include<SFML/Window.hpp>
 
 class Point {
 public:
@@ -120,9 +122,16 @@ Point findPoint(std::vector<Point>, Point, Point);
 float findTriangleSquare(Point, Point, Point);
 float findLength(Point, Point);
 std::vector<std::vector<Point>> findRecursiveEnvelope(std::vector<std::vector<Point>>, Point, Point, std::vector<Point>&);
+void drawPoint(Point);
+void drawPoints(GroupOfPoints);
+void drawPoint(Point, sf::Color);
+void drawPoints(GroupOfPoints, sf::Color);
+void drawLine(Vector);
+void drawLines(GroupOfVectors);
+GroupOfPoints groupOfVectorsToGroupOfPoints(GroupOfVectors);
 
-
-FindLinearEnvelope* LinearEnvelope::findLinearEnvelope = new Recursive();
+FindLinearEnvelope* LinearEnvelope::findLinearEnvelope = new Kirkpatrick();
+sf::RenderWindow window(sf::VideoMode(50, 50), "SFML works!");
 
 int main() {
 	/*Point p1(1, 1), p2(3, 2), p3(4, 2), p4(2, 5), p5(4, 7), p6(10, 7), p7(9, 4), p8(11, 3), p9(10, 1);
@@ -141,6 +150,29 @@ int main() {
 	//}
 	system("pause");
 	return 0;*/
+	sf::CircleShape shape(100.f);
+	shape.setFillColor(sf::Color::Green);
+	Point p1(3, 1), p2(3, 2), p3(4, 2), p4(2, 5), p5(4, 7), p6(10, 7), p7(9, 4), p8(11, 3), p9(10, 1);
+	GroupOfPoints gop(std::vector<Point>{p1, p2, p3, p4, p5, p6, p7, p8, p9});
+	LinearEnvelope le(gop);
+	GroupOfVectors res = le.findLinearEnvelopeFunc();
+	GroupOfPoints resGop = groupOfVectorsToGroupOfPoints(res);
+	while (window.isOpen())
+	{
+		sf::Event event;
+		while (window.pollEvent(event))
+		{
+			if (event.type == sf::Event::Closed)
+				window.close();
+		}
+
+		window.clear();
+		drawPoints(gop);
+		drawPoints(resGop, sf::Color::Red);
+		window.display();
+	}
+
+	return 0;
 }
 
 Point::Point(float a) : x(a), y(a) {};
@@ -246,71 +278,71 @@ GroupOfPoints LinearEnvelope::getPoints() const {
 }
 
 GroupOfVectors Kirkpatrick::findLinearEnvelope(GroupOfPoints gop) {
-	//std::cout << "Kirkpatrick: " << std::endl;
+	std::cout << "Kirkpatrick: " << std::endl;
 	//std::cout << "Sorting: " << std::endl;
 	std::vector<GroupOfPoints> sortedPoints = pocketSortGroupOfPoints(gop);
-	//std::cout << "Lefts: " << std::endl;
+	std::cout << "Lefts: " << std::endl;
 	std::vector<Point> lefts = getLeftsInLinearEnvelope(sortedPoints);
-	/*for (Point p : lefts) {
+	for (Point p : lefts) {
 		p.printPoint();
-	}*/
-	//std::cout << "Rights: " << std::endl;
+	}
+	std::cout << "Rights: " << std::endl;
 	std::vector<Point> rights = getRightsInLinearEnvelope(sortedPoints);
-	//for (Point p : rights) {
-		//p.printPoint();
-	//}
+	for (Point p : rights) {
+		p.printPoint();
+	}
 	GroupOfPoints rgop;
-	//std::cout << "LeftEnvelope: ";
+	std::cout << "LeftEnvelope: ";
 	std::vector<Point> leftEnvelope = getLeftPartOfEnvelope(lefts);
 	std::vector<Point> oldLeftEnvelope = leftEnvelope;
 	std::vector<Point> newLeftEnvelope = leftEnvelope;
 	while (true) {
 		newLeftEnvelope = getLeftPartOfEnvelope(oldLeftEnvelope);
-		//std::cout << "NewLeftEnvelope: " << std::endl;
-		//for (Point p : newLeftEnvelope) {
-			//p.printPoint();
-		//}
-		//std::cout << "OldLeftEnvelope: " << std::endl;
-		//for (Point p : oldLeftEnvelope) {
-			//p.printPoint();
-		//}
+		std::cout << "NewLeftEnvelope: " << std::endl;
+		for (Point p : newLeftEnvelope) {
+			p.printPoint();
+		}
+		std::cout << "OldLeftEnvelope: " << std::endl;
+		for (Point p : oldLeftEnvelope) {
+			p.printPoint();
+		}
 		if (std::equal(newLeftEnvelope.begin(), newLeftEnvelope.end(), oldLeftEnvelope.begin())) {
 			break;
 		}
 		oldLeftEnvelope = newLeftEnvelope;
 	}
-	//for (Point p : newLeftEnvelope) {
-		//p.printPoint();
-	//}
-	//std::cout << "RightEnvelope: ";
+	for (Point p : newLeftEnvelope) {
+		p.printPoint();
+	}
+	std::cout << "RightEnvelope: ";
 	std::vector<Point> rightEnvelope = getRightPartOfEnvelope(rights);
 	std::vector<Point> oldRightEnvelope = rightEnvelope;
 	std::vector<Point> newRightEnvelope = rightEnvelope;
 	while (true) {
 		newRightEnvelope = getRightPartOfEnvelope(oldRightEnvelope);
-		//std::cout << "NewRightEnvelope: " << std::endl;
-		//for (Point p : newRightEnvelope) {
-			//p.printPoint();
-		//}
-	//std::cout << "OldRightEnvelope: " << std::endl;
-		//for (Point p : oldRightEnvelope) {
-			//p.printPoint();
-		//}
+		std::cout << "NewRightEnvelope: " << std::endl;
+		for (Point p : newRightEnvelope) {
+			p.printPoint();
+		}
+	std::cout << "OldRightEnvelope: " << std::endl;
+		for (Point p : oldRightEnvelope) {
+			p.printPoint();
+		}
 		if (std::equal(newRightEnvelope.begin(), newRightEnvelope.end(), oldRightEnvelope.begin())) {
 			break;
 		}
 		oldRightEnvelope = newRightEnvelope;
 	}
-	//for (Point p : newRightEnvelope) {
-		//p.printPoint();
-	//}
+	for (Point p : newRightEnvelope) {
+		p.printPoint();
+	}
 	std::reverse(newRightEnvelope.begin(), newRightEnvelope.end());
 	for (Point p : newLeftEnvelope) {
 		rgop.add(p);
 	}
-	//for (Point p : newRightEnvelope) {
-		//rgop.add(p);
-	//}
+	for (Point p : newRightEnvelope) {
+		rgop.add(p);
+	}
 	return groupOfPointToGroupOFVectors(rgop);
 }
 
@@ -382,19 +414,15 @@ Point getRightInGroup(GroupOfPoints gop) {
 
 std::vector<Point> getLeftPartOfEnvelope(std::vector<Point> vp) {
 	std::vector<Point> points = { vp.at(0), vp.at(1)};
-	Point p1(3, 1);
-	Point p2 = vp.at(0);
-	Vector vec(p2, p1);
-	float angle = getAngle(Vector(points.at(0), points.at(1)), vec);
 	//std::cout << "Angle: " << angle << std::endl;
 	for (int i = 2; i < vp.size(); ++i) {
-		Vector newVector = Vector(vp.at(0), vp.at(i));
-		float newAngle = getAngle(newVector, vec);
-		if (newAngle > angle) {
+		Vector v1 = Vector(points.at(points.size()-2), points.at(points.size() - 1));
+		Vector v2 = Vector(points.at(points.size() - 1), vp.at(i));
+		float newAngle = getAngle(v1, v2);
+		if (newAngle < M_PI/2) {
 			//std::cout << "newAngle>angle";
 			points.pop_back();
 		}
-		angle = newAngle;
 		points.push_back(vp.at(i));
 		/*while (points.size() >= 3) {
 			std::cout << "Points: ";
@@ -415,29 +443,39 @@ std::vector<Point> getRightPartOfEnvelope(std::vector<Point> vp) {
 	std::vector<Point> points = { vp.at(0), vp.at(1) };
 	//std::cout << "vp.at(0): ";
 	//vp.at(0).printPoint();
-	Point p1(3, 1);
-	Point p2 = vp.at(0);
-	//std::cout << "p1: ";
-	//p1.printPoint();
-	//std::cout << "p2: ";
-	//p2.printPoint();
-	Vector vec(p2, p1);
-	//std::cout << "vec: ";
-	//vec.printVector();
-	float angle = getAngle(Vector(points.at(0), points.at(1)), vec);
 	//std::cout << "Angle: " << angle << std::endl;
 	for (int i = 2; i < vp.size(); ++i) {
-		Vector newVector = Vector(vp.at(0), vp.at(i));
-		//std::cout << "newVector: ";
-		newVector.printVector();
-		float newAngle = getAngle(newVector, vec);
-		//std::cout << "newAngle: " << newAngle << std::endl;
-		if (newAngle > angle) {
+		Vector v1 = Vector(points.at(points.size() - 2), points.at(points.size() - 1));
+		Vector v2 = Vector(points.at(points.size() - 2), vp.at(i));
+		std::cout << "Vector v1: " << std::endl;
+		v1.printVector();
+		std::cout << "Vector v2: " << std::endl;
+		v2.printVector();
+		float newAngle = getAngle(v1, v2);
+		std::cout << "Angle: " << newAngle << std::endl;
+		if (newAngle < M_PI / 2) {
 			//std::cout << "newAngle>angle";
 			points.pop_back();
 		}
-		angle = newAngle;
 		points.push_back(vp.at(i));
+		/*Vector v1 = Vector(vp.at(i - 1), vp.at(i - 2));
+		Vector v2 = Vector(vp.at(i - 1), vp.at(i));
+		std::cout << "Vector v1: " << std::endl;
+		v1.printVector();
+		std::cout << "Vector v2: " << std::endl;
+		v2.printVector();
+		float newAngle = getAngle(v1, v2);
+		std::cout << "Angle: " << newAngle << std::endl;
+		if (newAngle <= M_PI / 2) {
+			//std::cout << "newAngle>angle";
+			points.pop_back();
+			for (int j = i; j < vp.size(); j++) {
+				points.push_back(vp.at(j));
+			}
+			break;
+		}
+		points.push_back(vp.at(i));*/
+
 		//for (Point p : points) {
 			//p.printPoint();
 		//}
@@ -791,6 +829,54 @@ std::vector<std::vector<Point>> findRecursiveEnvelope(std::vector<std::vector<Po
 		//p.printPoint();
 	//}
 	return res;
+}
+
+void drawPoint(Point p) {
+	sf::Vertex point(sf::Vector2f(p.getX(), p.getY()), sf::Color::White);
+	window.draw(&point, 1, sf::Points);
+}
+
+void drawPoints(GroupOfPoints gop) {
+	std::vector<Point> points = gop.getPoints();
+	for (Point p : points) {
+		drawPoint(p);
+	}
+}
+
+void drawLine(Vector v) {
+	sf::Vertex line[] = {
+		sf::Vertex(sf::Vector2f(v.getBegin().getX(), v.getBegin().getY()), sf::Color::White),
+		sf::Vertex(sf::Vector2f(v.getEnd().getX(), v.getEnd().getY()), sf::Color::White)
+	};
+	window.draw(line, 2, sf::Lines);
+}
+
+void drawLines(GroupOfVectors gov) {
+	std::vector<Vector> vectors = gov.getVectors();
+	for (Vector v : vectors) {
+		drawLine(v);
+	}
+}
+
+GroupOfPoints groupOfVectorsToGroupOfPoints(GroupOfVectors gov) {
+	std::vector<Point> points;
+	std::vector<Vector> vectors = gov.getVectors();
+	for (Vector v : vectors) {
+		points.push_back(v.getBegin());
+		points.push_back(v.getEnd());
+	}
+	return GroupOfPoints(points);
+}
+
+void drawPoint(Point p, sf::Color c) {
+	sf::Vertex point(sf::Vector2f(p.getX(), p.getY()), c);
+	window.draw(&point, 1, sf::Points);
+}
+void drawPoints(GroupOfPoints gop, sf::Color c) {
+	std::vector<Point> points = gop.getPoints();
+	for (Point p : points) {
+		drawPoint(p, c);
+	}
 }
 
 
