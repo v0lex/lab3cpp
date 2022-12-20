@@ -8,6 +8,10 @@
 #include<SFML/Graphics.hpp>
 #include<SFML/Window.hpp>
 
+#define WIDTH 50
+#define HEIGHT 50
+#define NUMBEROFPOINTS 20
+
 class Point {
 public:
 	Point() {};
@@ -129,11 +133,15 @@ void drawPoints(GroupOfPoints, sf::Color);
 void drawLine(Vector);
 void drawLines(GroupOfVectors);
 GroupOfPoints groupOfVectorsToGroupOfPoints(GroupOfVectors);
+int generateRandomNumber(int);
+Point generateRandomPoint(int, int);
+std::vector<Point> generateRandomPoints(int, int, int);
 
 FindLinearEnvelope* LinearEnvelope::findLinearEnvelope = new Kirkpatrick();
-sf::RenderWindow window(sf::VideoMode(50, 50), "SFML works!");
+sf::RenderWindow window(sf::VideoMode(WIDTH, HEIGHT), "BloodTrail");
 
 int main() {
+	srand(time(NULL));
 	/*Point p1(1, 1), p2(3, 2), p3(4, 2), p4(2, 5), p5(4, 7), p6(10, 7), p7(9, 4), p8(11, 3), p9(10, 1);
 	GroupOfPoints gop(std::vector<Point>{p1, p2, p3, p4, p5, p6, p7, p8, p9});
 	LinearEnvelope le(gop);
@@ -150,10 +158,12 @@ int main() {
 	//}
 	system("pause");
 	return 0;*/
-	sf::CircleShape shape(100.f);
-	shape.setFillColor(sf::Color::Green);
+	//sf::CircleShape shape(100.f);
+	//shape.setFillColor(sf::Color::Green);
 	Point p1(3, 1), p2(3, 2), p3(4, 2), p4(2, 5), p5(4, 7), p6(10, 7), p7(9, 4), p8(11, 3), p9(10, 1);
-	GroupOfPoints gop(std::vector<Point>{p1, p2, p3, p4, p5, p6, p7, p8, p9});
+	std::vector<Point> points = generateRandomPoints(NUMBEROFPOINTS, WIDTH, HEIGHT);
+	//std::vector<Point> points = {p1,p2,p3,p4,p5,p6,p7,p8,p9};
+	GroupOfPoints gop(points);
 	LinearEnvelope le(gop);
 	GroupOfVectors res = le.findLinearEnvelopeFunc();
 	GroupOfPoints resGop = groupOfVectorsToGroupOfPoints(res);
@@ -168,7 +178,8 @@ int main() {
 
 		window.clear();
 		drawPoints(gop);
-		drawPoints(resGop, sf::Color::Red);
+		//drawPoints(resGop, sf::Color::Red);
+		drawLines(res);
 		window.display();
 	}
 
@@ -413,7 +424,7 @@ Point getRightInGroup(GroupOfPoints gop) {
 }
 
 std::vector<Point> getLeftPartOfEnvelope(std::vector<Point> vp) {
-	std::vector<Point> points = { vp.at(0), vp.at(1)};
+	/*std::vector<Point> points = {vp.at(0), vp.at(1)};
 	//std::cout << "Angle: " << angle << std::endl;
 	for (int i = 2; i < vp.size(); ++i) {
 		Vector v1 = Vector(points.at(points.size()-2), points.at(points.size() - 1));
@@ -431,28 +442,56 @@ std::vector<Point> getLeftPartOfEnvelope(std::vector<Point> vp) {
 			}
 			std::cout << "Points.size: " << points.size() << std::endl;
 			points = getLeftPartOfEnvelope(points);
-		}*/
+		}
 		//for (Point p : points) {
 			//p.printPoint();
 		//}
+	}
+	return points; */
+	std::vector<Point> points = { vp.at(0), vp.at(1) };
+	Point p1(vp.at(0).getX()+2, vp.at(0).getY());
+	std::cout << "P1: ";
+	p1.printPoint();
+	Point p2 = vp.at(0);
+	Vector vec(p2, p1);
+	float angle = getAngle(Vector(points.at(0), points.at(1)), vec);
+	std::cout << "Angle: " << angle << std::endl;
+	for (int i = 2; i < vp.size(); ++i) {
+		Vector newVector = Vector(vp.at(0), vp.at(i));
+		std::cout << "newVector: ";
+		newVector.printVector();
+		float newAngle = getAngle(newVector, vec);
+		std::cout << "newAngle: " << newAngle << std::endl;
+		if (newAngle> angle) {//((angle < M_PI/2+0.0001) && (newAngle > angle)) || ((angle > M_PI/2+0.0001) && (newAngle<angle))) {
+			std::cout << "newAngle>angle";
+			points.pop_back();
+		}
+		angle = newAngle;
+		points.push_back(vp.at(i));
+		/*while (points.size() >= 3) {
+			std::cout << "Points: ";
+			for (Point p : points) {
+				p.printPoint();
+			}
+			std::cout << "Points.size: " << points.size() << std::endl;
+			points = getLeftPartOfEnvelope(points);
+		}*/
+		for (Point p : points) {
+			p.printPoint();
+		}
 	}
 	return points;
 }
 
 std::vector<Point> getRightPartOfEnvelope(std::vector<Point> vp) {
-	std::vector<Point> points = { vp.at(0), vp.at(1) };
+	/*std::vector<Point> points = {vp.at(0), vp.at(1)};
 	//std::cout << "vp.at(0): ";
 	//vp.at(0).printPoint();
 	//std::cout << "Angle: " << angle << std::endl;
 	for (int i = 2; i < vp.size(); ++i) {
 		Vector v1 = Vector(points.at(points.size() - 2), points.at(points.size() - 1));
 		Vector v2 = Vector(points.at(points.size() - 2), vp.at(i));
-		std::cout << "Vector v1: " << std::endl;
-		v1.printVector();
-		std::cout << "Vector v2: " << std::endl;
-		v2.printVector();
 		float newAngle = getAngle(v1, v2);
-		std::cout << "Angle: " << newAngle << std::endl;
 		if (newAngle < M_PI / 2) {
 			//std::cout << "newAngle>angle";
 			points.pop_back();
@@ -474,11 +513,42 @@ std::vector<Point> getRightPartOfEnvelope(std::vector<Point> vp) {
 			}
 			break;
 		}
-		points.push_back(vp.at(i));*/
+		points.push_back(vp.at(i));
 
 		//for (Point p : points) {
 			//p.printPoint();
 		//}
+	}
+	return points; */
+	std::vector<Point> points = { vp.at(0), vp.at(1) };
+	std::cout << "vp.at(0): ";
+	vp.at(0).printPoint();
+	Point p1(vp.at(0).getX() - 2, vp.at(0).getY());
+	Point p2 = vp.at(0);
+	std::cout << "p1: ";
+	p1.printPoint();
+	std::cout << "p2: ";
+	p2.printPoint();
+	Vector vec(p2, p1);
+	std::cout << "vec: ";
+	vec.printVector();
+	float angle = getAngle(Vector(points.at(0), points.at(1)), vec);
+	std::cout << "Angle: " << angle << std::endl;
+	for (int i = 2; i < vp.size(); ++i) {
+		Vector newVector = Vector(vp.at(0), vp.at(i));
+		std::cout << "newVector: ";
+		newVector.printVector();
+		float newAngle = getAngle(newVector, vec);
+		std::cout << "newAngle: " << newAngle << std::endl;
+		if (newAngle>angle){//((angle < M_PI / 2 + 0.0001) && (newAngle > angle)) || ((angle > M_PI / 2 + 0.0001) && (newAngle < angle))) {
+			std::cout << "newAngle>angle";
+			points.pop_back();
+		}
+		angle = newAngle;
+		points.push_back(vp.at(i));
+		for (Point p : points) {
+			p.printPoint();
+		}
 	}
 	return points;
 }
@@ -550,6 +620,7 @@ GroupOfVectors groupOfPointToGroupOFVectors(GroupOfPoints gop) {
 
 GroupOfVectors Graham::findLinearEnvelope(GroupOfPoints gop) {
 	//std::cout << "Graham" << std::endl;
+	std::vector<Point> points = gop.getPoints();
 	Point q(6, 5);
 	GroupOfPoints sortedgop = sortPolar(gop, q);
 	std::vector<Point> sortedPoints = sortedgop.getPoints();
@@ -877,6 +948,22 @@ void drawPoints(GroupOfPoints gop, sf::Color c) {
 	for (Point p : points) {
 		drawPoint(p, c);
 	}
+}
+
+int generateRandomNumber(int n) {
+	return rand() % (n + 1);
+}
+
+Point generateRandomPoint(int x, int y) {
+	return Point(generateRandomNumber(x), generateRandomNumber(y));
+}
+
+std::vector<Point> generateRandomPoints(int n, int x, int y) {
+	std::vector<Point> points;
+	for (int i = 0; i < n; i++) {
+		points.push_back(generateRandomPoint(x, y));
+	}
+	return points;
 }
 
 
